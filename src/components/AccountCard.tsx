@@ -85,7 +85,7 @@ export function AccountCard({ account, selected, onSelect, overlay, accent }: Pr
               setEditing(true)
             }}
             title="Add justification"
-            className={`rounded p-1 text-slate-300 transition hover:bg-slate-100 hover:text-slate-600 ${note ? 'text-slate-400' : 'opacity-0 group-hover:opacity-100'}`}
+            className={`rounded p-1 transition hover:bg-slate-100 hover:text-slate-600 ${note ? 'text-slate-400' : 'text-slate-200 group-hover:text-slate-400'}`}
           >
             <MessageSquare size={13} />
           </button>
@@ -95,7 +95,7 @@ export function AccountCard({ account, selected, onSelect, overlay, accent }: Pr
               if (window.confirm(`Remove ${account.name} from the board?`)) removeAccount(account.id)
             }}
             title="Remove account"
-            className="rounded p-1 text-slate-300 opacity-0 transition group-hover:opacity-100 hover:bg-red-50 hover:text-red-600"
+            className="rounded p-1 text-slate-200 transition group-hover:text-slate-400 hover:bg-red-50 hover:text-red-600"
           >
             <Trash2 size={13} />
           </button>
