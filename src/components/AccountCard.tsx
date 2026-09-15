@@ -51,12 +51,12 @@ export function AccountCard({ account, selected, onSelect, overlay, accent }: Pr
         <GripVertical size={14} />
       </button>
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <span className="truncate font-medium text-slate-800">{account.name}</span>
-          <span className={`shrink-0 rounded px-1.5 py-px text-[10px] font-semibold ring-1 ${regionStyle[account.region] ?? 'bg-slate-50 text-slate-600 ring-slate-200'}`}>
+        <p className="font-medium leading-snug text-slate-800 [overflow-wrap:anywhere]">
+          {account.name}
+          <span className={`ml-1.5 inline-block align-middle rounded px-1.5 py-px text-[10px] font-semibold leading-tight ring-1 ${regionStyle[account.region] ?? 'bg-slate-50 text-slate-600 ring-slate-200'}`}>
             {account.region}
           </span>
-        </div>
+        </p>
         {editing ? (
           <input
             autoFocus
@@ -78,7 +78,7 @@ export function AccountCard({ account, selected, onSelect, overlay, accent }: Pr
         ) : null}
       </div>
       {!overlay && (
-        <div className="flex shrink-0 items-center">
+        <div className="-mr-1 flex shrink-0 items-center">
           <button
             onClick={(e) => {
               e.stopPropagation()
