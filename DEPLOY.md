@@ -1,16 +1,16 @@
-# Deploying & restricting access (Cloudflare Pages + Access)
+# Deploying & restricting access (Cloudflare Workers + Access)
 
 The app is static, so access control is enforced by Cloudflare Access in front of
-Cloudflare Pages: nobody gets the app files without first passing a login that is
+the Cloudflare Worker that serves the static build: nobody gets the app files without first passing a login that is
 limited to `@cognition.ai` emails. Login is a magic link / one-time PIN emailed to
 the user (Google sign-in can be added alongside).
 
-## 1. Create the Pages project (once)
+## 1. Create the Worker (once)
 
-1. Cloudflare dashboard → **Workers & Pages → Create → Pages → Direct Upload**.
-2. Project name: `territory-planner`. Upload anything (or an empty folder) to create it;
-   the GitHub Action below replaces it on the next push to `main`.
-3. Note the site URL: `https://territory-planner.pages.dev`.
+1. Cloudflare dashboard → **Workers & Pages → Create → Upload your static files**.
+2. Name it `territory-planner` (must match `name` in `wrangler.toml`). Upload anything
+   to create it; the GitHub Action below replaces it on the next push to `main`.
+3. Note the site URL, e.g. `https://territory-planner.<account>.workers.dev`.
 
 ## 2. Add GitHub repo secrets
 
@@ -19,10 +19,11 @@ Repo → **Settings → Secrets and variables → Actions**:
 | Secret | Where to get it |
 | --- | --- |
 | `CLOUDFLARE_ACCOUNT_ID` | Dashboard → Workers & Pages → right sidebar "Account ID" |
-| `CLOUDFLARE_API_TOKEN` | My Profile → API Tokens → Create Token → template **"Edit Cloudflare Workers"** (or custom token with `Account → Cloudflare Pages → Edit`) |
+| `CLOUDFLARE_API_TOKEN` | My Profile → API Tokens → Create Token → template **"Edit Cloudflare Workers"** |
 
 Every push to `main` now runs `.github/workflows/deploy.yml`, which builds `dist/`
-and publishes it to Pages.
+and runs `wrangler deploy`, which uploads `dist/` as the Worker's static assets
+(`wrangler.toml`).
 
 ## 3. Restrict access to @cognition.ai (Cloudflare Access)
 
@@ -33,8 +34,8 @@ and publishes it to Pages.
 3. **Access → Applications → Add an application → Self-hosted.**
    - Application name: `Territory Planner`
    - Session duration: e.g. 1 week
-   - Application domain: `territory-planner.pages.dev`
-     (also add `*.territory-planner.pages.dev` so preview deployments are protected)
+   - Application domain: `territory-planner.<account>.workers.dev`
+     (copy the exact hostname from the Worker's overview page)
 4. **Add a policy**:
    - Name: `Cognition staff`, Action: **Allow**
    - Include → Selector **Emails ending in** → `@cognition.ai`
@@ -46,5 +47,6 @@ and publishes it to Pages.
 
 - Saved versions live in each user's browser (localStorage). Access gates who can
   open the app; it does not make plans shared between users.
-- To also block the `*.pages.dev` hostnames from being reachable without Access,
-  keep the `*.territory-planner.pages.dev` domain in the Access application.
+- Preview URLs (`<version>-territory-planner.<account>.workers.dev`) are not covered by
+  the policy above; disable them under the Worker's **Settings → Domains & Routes →
+  Preview URLs** or add `*.<account>.workers.dev` to the Access application.
