@@ -1,6 +1,6 @@
 import { useDraggable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
-import { GripVertical, MessageSquare } from 'lucide-react'
+import { GripVertical, MessageSquare, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useStore } from '../store'
 import type { Account } from '../types'
@@ -22,6 +22,7 @@ const regionStyle: Record<string, string> = {
 export function AccountCard({ account, selected, onSelect, overlay, accent }: Props) {
   const note = useStore((s) => s.notes[account.id])
   const setNote = useStore((s) => s.setNote)
+  const removeAccount = useStore((s) => s.removeAccount)
   const [editing, setEditing] = useState(false)
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: account.id,
@@ -77,16 +78,28 @@ export function AccountCard({ account, selected, onSelect, overlay, accent }: Pr
         ) : null}
       </div>
       {!overlay && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            setEditing(true)
-          }}
-          title="Add justification"
-          className={`shrink-0 rounded p-1 text-slate-300 transition hover:bg-slate-100 hover:text-slate-600 ${note ? 'text-slate-400' : 'opacity-0 group-hover:opacity-100'}`}
-        >
-          <MessageSquare size={13} />
-        </button>
+        <div className="flex shrink-0 items-center">
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              setEditing(true)
+            }}
+            title="Add justification"
+            className={`rounded p-1 text-slate-300 transition hover:bg-slate-100 hover:text-slate-600 ${note ? 'text-slate-400' : 'opacity-0 group-hover:opacity-100'}`}
+          >
+            <MessageSquare size={13} />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              if (window.confirm(`Remove ${account.name} from the board?`)) removeAccount(account.id)
+            }}
+            title="Remove account"
+            className="rounded p-1 text-slate-300 opacity-0 transition group-hover:opacity-100 hover:bg-red-50 hover:text-red-600"
+          >
+            <Trash2 size={13} />
+          </button>
+        </div>
       )}
     </div>
   )

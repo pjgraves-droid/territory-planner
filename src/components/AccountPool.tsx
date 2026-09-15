@@ -1,6 +1,7 @@
 import { useDroppable } from '@dnd-kit/core'
-import { Search } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { Check, FileUp, Plus, Search } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { AddAccountDialog, ImportAccountsDialog } from './AccountDialogs'
 import { useStore } from '../store'
 import { UNASSIGNED } from '../types'
 import { AccountCard } from './AccountCard'
@@ -18,6 +19,13 @@ export function AccountPool({ selectedIds, onSelect, onClearSelection }: Props) 
   const [query, setQuery] = useState('')
   const [region, setRegion] = useState<string | null>(null)
   const { setNodeRef, isOver } = useDroppable({ id: UNASSIGNED })
+  const [dialog, setDialog] = useState<'add' | 'import' | null>(null)
+  const [toast, setToast] = useState<string | null>(null)
+  useEffect(() => {
+    if (!toast) return
+    const t = setTimeout(() => setToast(null), 3000)
+    return () => clearTimeout(t)
+  }, [toast])
 
   const regions = useMemo(() => Array.from(new Set(unassigned.map((a) => a.region))).sort(), [unassigned])
   const visible = useMemo(
@@ -37,11 +45,27 @@ export function AccountPool({ selectedIds, onSelect, onClearSelection }: Props) 
       ].join(' ')}
     >
       <div className="border-b border-slate-100 px-3 pt-3 pb-2">
-        <div className="flex items-baseline justify-between">
+        <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-slate-800">Unassigned accounts</h2>
-          <span className="text-xs text-slate-500">
-            {unassigned.length} of {total}
-          </span>
+          <div className="flex items-center gap-1">
+            <span className="mr-1 text-xs text-slate-500">
+              {unassigned.length} of {total}
+            </span>
+            <button
+              onClick={() => setDialog('import')}
+              title="Import accounts from CSV / Excel"
+              className="rounded-md p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+            >
+              <FileUp size={15} />
+            </button>
+            <button
+              onClick={() => setDialog('add')}
+              title="Add account"
+              className="rounded-md bg-slate-900 p-1 text-white hover:bg-slate-700"
+            >
+              <Plus size={15} />
+            </button>
+          </div>
         </div>
         <label className="mt-2 flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 focus-within:border-blue-400 focus-within:bg-white">
           <Search size={14} className="text-slate-400" />
@@ -80,6 +104,13 @@ export function AccountPool({ selectedIds, onSelect, onClearSelection }: Props) 
       <p className="border-t border-slate-100 px-3 py-2 text-[11px] text-slate-400">
         Tip: click to select, Shift/Ctrl-click for multiple, then drag.
       </p>
+      {dialog === 'add' && <AddAccountDialog onClose={() => setDialog(null)} onDone={setToast} />}
+      {dialog === 'import' && <ImportAccountsDialog onClose={() => setDialog(null)} onDone={setToast} />}
+      {toast && (
+        <div className="fixed bottom-5 left-1/2 z-50 -translate-x-1/2 rounded-lg bg-slate-900 px-4 py-2 text-sm text-white shadow-lg">
+          <Check size={14} className="mr-1.5 inline" /> {toast}
+        </div>
+      )}
     </aside>
   )
 }

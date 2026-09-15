@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { parseAccountsCsv } from './csv'
+import { parseAccountsCsv, slug } from './csv'
 import { DIRECTORS, DIRECTOR_PALETTE, UNASSIGNED, type Account, type Director, type Version } from './types'
 
 interface State {
@@ -17,6 +17,8 @@ interface State {
   renameDirector: (id: string, name: string) => void
   removeDirector: (id: string) => void
   seedFromCsv: (text: string, replaceAssignments: boolean) => void
+  addAccounts: (items: NewAccount[]) => { added: number; skipped: number }
+  removeAccount: (id: string) => void
   assign: (accountId: string, directorId: string) => void
   assignMany: (accountIds: string[], directorId: string) => void
   setNote: (accountId: string, note: string) => void
@@ -28,6 +30,13 @@ interface State {
   duplicateVersion: (id: string) => void
   resetToCsv: () => Promise<void>
   importVersions: (versions: Version[]) => void
+}
+
+export interface NewAccount {
+  name: string
+  region: string
+  directorId?: string
+  note?: string
 }
 
 const uid = () => Math.random().toString(36).slice(2, 10)
@@ -83,6 +92,41 @@ export const useStore = create<State>()(
         const notes = replaceAssignments ? parsed.notes : { ...parsed.notes, ...prev.notes }
         set({ accounts: parsed.accounts, assignments, notes, seeded: true, dirty: !replaceAssignments || prev.dirty })
       },
+
+      addAccounts: (items) => {
+        const s = get()
+        const existing = new Set(s.accounts.map((a) => a.id))
+        const directorIds = new Set(s.directors.map((d) => d.id))
+        const accounts = [...s.accounts]
+        const assignments = { ...s.assignments }
+        const notes = { ...s.notes }
+        let added = 0
+        let skipped = 0
+        for (const item of items) {
+          const name = item.name.trim()
+          const id = slug(name)
+          if (!name || !id || existing.has(id)) {
+            skipped++
+            continue
+          }
+          existing.add(id)
+          accounts.push({ id, name, region: item.region.trim() || '—' })
+          assignments[id] = item.directorId && directorIds.has(item.directorId) ? item.directorId : UNASSIGNED
+          if (item.note?.trim()) notes[id] = item.note.trim()
+          added++
+        }
+        if (added) set({ accounts, assignments, notes, dirty: true })
+        return { added, skipped }
+      },
+
+      removeAccount: (id) =>
+        set((s) => {
+          const assignments = { ...s.assignments }
+          const notes = { ...s.notes }
+          delete assignments[id]
+          delete notes[id]
+          return { accounts: s.accounts.filter((a) => a.id !== id), assignments, notes, dirty: true }
+        }),
 
       assign: (accountId, directorId) => {
         if (get().assignments[accountId] === directorId) return
