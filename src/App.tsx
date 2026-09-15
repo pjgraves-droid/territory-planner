@@ -11,13 +11,14 @@ import {
 import { useCallback, useEffect, useState } from 'react'
 import { AccountCard } from './components/AccountCard'
 import { AccountPool } from './components/AccountPool'
-import { DirectorColumn } from './components/DirectorColumn'
+import { AddDirectorCard, DirectorColumn } from './components/DirectorColumn'
 import { TopBar } from './components/TopBar'
 import { useStore } from './store'
-import { DIRECTORS } from './types'
 
 export default function App() {
   const accounts = useStore((s) => s.accounts)
+  const directors = useStore((s) => s.directors)
+  const addDirector = useStore((s) => s.addDirector)
   const seeded = useStore((s) => s.seeded)
   const seedFromCsv = useStore((s) => s.seedFromCsv)
   const assignMany = useStore((s) => s.assignMany)
@@ -68,9 +69,10 @@ export default function App() {
         <div className="flex min-h-0 flex-1">
           <AccountPool selectedIds={selected} onSelect={onSelect} onClearSelection={() => setSelected(new Set())} />
           <main className="scrollbar-thin grid min-w-0 flex-1 auto-rows-min grid-cols-[repeat(auto-fit,minmax(200px,1fr))] content-start gap-3 overflow-y-auto p-4">
-            {DIRECTORS.map((d) => (
+            {directors.map((d) => (
               <DirectorColumn key={d.id} director={d} selectedIds={selected} onSelect={onSelect} />
             ))}
+            <AddDirectorCard onAdd={addDirector} />
           </main>
         </div>
         <DragOverlay dropAnimation={null}>

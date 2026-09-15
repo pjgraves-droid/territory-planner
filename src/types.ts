@@ -17,6 +17,8 @@ export const DIRECTORS: Director[] = [
   { id: 'blake', name: 'Blake Usenick', short: 'Blake', color: '#dc2626' },
 ]
 
+export const DIRECTOR_PALETTE = ['#4f46e5', '#0d9488', '#ea580c', '#9333ea', '#65a30d', '#be185d', '#0284c7', '#b45309']
+
 export const CSV_LEAD_TO_DIRECTOR: Record<string, string> = {
   pete: 'peter',
   peter: 'peter',
