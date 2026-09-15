@@ -1,5 +1,5 @@
 import { useDroppable } from '@dnd-kit/core'
-import { Check, FileUp, Plus, Search } from 'lucide-react'
+import { ArrowDownWideNarrow, Check, FileUp, Plus, Search } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { AddAccountDialog, ImportAccountsDialog } from './AccountDialogs'
 import { useStore } from '../store'
@@ -18,6 +18,7 @@ export function AccountPool({ selectedIds, onSelect, onClearSelection }: Props) 
   const unassigned = useAccountsFor(UNASSIGNED)
   const [query, setQuery] = useState('')
   const [region, setRegion] = useState<string | null>(null)
+  const [sort, setSort] = useState<'name' | 'icp'>('name')
   const { setNodeRef, isOver } = useDroppable({ id: UNASSIGNED })
   const [dialog, setDialog] = useState<'add' | 'import' | null>(null)
   const [toast, setToast] = useState<string | null>(null)
@@ -30,10 +31,12 @@ export function AccountPool({ selectedIds, onSelect, onClearSelection }: Props) 
   const regions = useMemo(() => Array.from(new Set(unassigned.map((a) => a.region))).sort(), [unassigned])
   const visible = useMemo(
     () =>
-      unassigned.filter(
-        (a) => (!region || a.region === region) && a.name.toLowerCase().includes(query.trim().toLowerCase()),
-      ),
-    [unassigned, region, query],
+      unassigned
+        .filter((a) => (!region || a.region === region) && a.name.toLowerCase().includes(query.trim().toLowerCase()))
+        .sort((a, b) =>
+          sort === 'icp' ? (b.details?.icp ?? -1) - (a.details?.icp ?? -1) || a.name.localeCompare(b.name) : a.name.localeCompare(b.name),
+        ),
+    [unassigned, region, query, sort],
   )
 
   return (
@@ -76,14 +79,25 @@ export function AccountPool({ selectedIds, onSelect, onClearSelection }: Props) 
             className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400"
           />
         </label>
-        {regions.length > 1 && (
-          <div className="mt-2 flex flex-wrap gap-1">
-            <Chip active={region === null} onClick={() => setRegion(null)}>All</Chip>
-            {regions.map((r) => (
-              <Chip key={r} active={region === r} onClick={() => setRegion(region === r ? null : r)}>{r}</Chip>
-            ))}
-          </div>
-        )}
+        <div className="mt-2 flex items-center gap-1">
+          {regions.length > 1 && (
+            <div className="flex flex-1 flex-wrap gap-1">
+              <Chip active={region === null} onClick={() => setRegion(null)}>All</Chip>
+              {regions.map((r) => (
+                <Chip key={r} active={region === r} onClick={() => setRegion(region === r ? null : r)}>{r}</Chip>
+              ))}
+            </div>
+          )}
+          <button
+            onClick={() => setSort(sort === 'name' ? 'icp' : 'name')}
+            title={sort === 'icp' ? 'Sorted by ICP score (high to low) — click for A–Z' : 'Sorted A–Z — click to sort by ICP score'}
+            className={`ml-auto flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium transition ${
+              sort === 'icp' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            <ArrowDownWideNarrow size={12} /> {sort === 'icp' ? 'ICP' : 'A–Z'}
+          </button>
+        </div>
         {selectedIds.size > 0 && (
           <div className="mt-2 flex items-center justify-between rounded-md bg-blue-50 px-2 py-1 text-xs text-blue-700">
             <span>{selectedIds.size} selected — drag to move together</span>

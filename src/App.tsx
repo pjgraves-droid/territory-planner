@@ -21,14 +21,14 @@ export default function App() {
   const addDirector = useStore((s) => s.addDirector)
   const seeded = useStore((s) => s.seeded)
   const seedFromCsv = useStore((s) => s.seedFromCsv)
+  const mergeDetailsFromCsv = useStore((s) => s.mergeDetailsFromCsv)
   const assignMany = useStore((s) => s.assignMany)
 
   useEffect(() => {
-    if (seeded) return
     fetch(`${import.meta.env.BASE_URL}accounts.csv`)
       .then((r) => r.text())
-      .then((t) => seedFromCsv(t, true))
-  }, [seeded, seedFromCsv])
+      .then((t) => (seeded ? mergeDetailsFromCsv(t) : seedFromCsv(t, true)))
+  }, [seeded, seedFromCsv, mergeDetailsFromCsv])
 
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [activeId, setActiveId] = useState<string | null>(null)
