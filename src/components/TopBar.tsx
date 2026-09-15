@@ -8,7 +8,7 @@ export function TopBar() {
   const s = useStore()
   const active = s.versions.find((v) => v.id === s.activeVersionId)
   const versionName = active?.name ?? 'Unsaved draft'
-  const input: ExportInput = { accounts: s.accounts, assignments: s.assignments, notes: s.notes, versionName }
+  const input: ExportInput = { accounts: s.accounts, assignments: s.assignments, notes: s.notes, versionName, directors: s.directors }
 
   const [toast, setToast] = useState<string | null>(null)
   useEffect(() => {
@@ -39,7 +39,7 @@ export function TopBar() {
       <VersionMenu active={active} versionName={versionName} dirty={s.dirty} />
 
       <button
-        onClick={() => s.saveVersion()}
+        onClick={() => (active ? s.saveVersion() : saveAs())}
         disabled={!s.dirty && !!active}
         className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-slate-700 disabled:cursor-default disabled:bg-slate-200 disabled:text-slate-400"
       >

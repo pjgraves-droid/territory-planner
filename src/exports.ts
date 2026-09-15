@@ -2,13 +2,14 @@ import * as XLSX from 'xlsx'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import Papa from 'papaparse'
-import { DIRECTORS, UNASSIGNED, type Account } from './types'
+import { UNASSIGNED, type Account, type Director } from './types'
 
 export interface ExportInput {
   accounts: Account[]
   assignments: Record<string, string>
   notes: Record<string, string>
   versionName: string
+  directors: Director[]
 }
 
 interface Row {
@@ -18,10 +19,11 @@ interface Row {
   Justification: string
 }
 
-const directorName = (id: string) => DIRECTORS.find((d) => d.id === id)?.name ?? 'Unassigned'
 
-export function buildRows({ accounts, assignments, notes }: ExportInput): Row[] {
-  const order = [...DIRECTORS.map((d) => d.id), UNASSIGNED]
+const nameOf = (directors: Director[], id: string) => directors.find((d) => d.id === id)?.name ?? 'Unassigned'
+
+export function buildRows({ accounts, assignments, notes, directors }: ExportInput): Row[] {
+  const order = [...directors.map((d) => d.id), UNASSIGNED]
   return [...accounts]
     .sort((a, b) => {
       const da = order.indexOf(assignments[a.id] ?? UNASSIGNED)
@@ -31,7 +33,7 @@ export function buildRows({ accounts, assignments, notes }: ExportInput): Row[] 
     .map((a) => ({
       Account: a.name,
       Region: a.region,
-      'Account Director': directorName(assignments[a.id] ?? UNASSIGNED),
+      'Account Director': nameOf(directors, assignments[a.id] ?? UNASSIGNED),
       Justification: notes[a.id] ?? '',
     }))
 }
@@ -57,10 +59,10 @@ export function exportExcel(input: ExportInput) {
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'All accounts')
 
-  const summary = [...DIRECTORS.map((d) => d.id), UNASSIGNED].map((id) => {
+  const summary = [...input.directors.map((d) => d.id), UNASSIGNED].map((id) => {
     const mine = input.accounts.filter((a) => (input.assignments[a.id] ?? UNASSIGNED) === id)
     return {
-      'Account Director': directorName(id),
+      'Account Director': nameOf(input.directors, id),
       Accounts: mine.length,
       AU: mine.filter((a) => a.region === 'AU').length,
       NZ: mine.filter((a) => a.region === 'NZ').length,
@@ -69,7 +71,7 @@ export function exportExcel(input: ExportInput) {
   })
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summary), 'Summary')
 
-  for (const d of DIRECTORS) {
+  for (const d of input.directors) {
     const mine = rows.filter((r) => r['Account Director'] === d.name)
     if (mine.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(mine), d.name.slice(0, 31))
   }
@@ -84,9 +86,9 @@ export function exportPdf(input: ExportInput) {
   doc.setTextColor(100)
   doc.text(`${input.versionName} · exported ${new Date().toLocaleString()}`, 40, 68)
 
-  const summary = [...DIRECTORS.map((d) => d.id), UNASSIGNED].map((id) => {
+  const summary = [...input.directors.map((d) => d.id), UNASSIGNED].map((id) => {
     const mine = input.accounts.filter((a) => (input.assignments[a.id] ?? UNASSIGNED) === id)
-    return [directorName(id), String(mine.length), mine.map((a) => a.name).join(', ')]
+    return [nameOf(input.directors, id), String(mine.length), mine.map((a) => a.name).join(', ')]
   })
   autoTable(doc, {
     startY: 85,

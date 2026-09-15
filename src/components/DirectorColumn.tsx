@@ -1,5 +1,6 @@
 import { useDroppable } from '@dnd-kit/core'
-import { useMemo } from 'react'
+import { MoreHorizontal, Pencil, Plus, Trash2, UserPlus } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '../store'
 import { UNASSIGNED, type Account, type Director } from '../types'
 import { AccountCard } from './AccountCard'
@@ -25,7 +26,19 @@ export function DirectorColumn({ director, selectedIds, onSelect }: Props) {
   const au = mine.filter((a) => a.region === 'AU').length
   const nz = mine.filter((a) => a.region === 'NZ').length
   const other = mine.length - au - nz
-  const initials = director.name.split(' ').map((p) => p[0]).join('')
+  const initials = director.name.split(' ').map((p) => p[0]).join('').slice(0, 2).toUpperCase()
+  const renameDirector = useStore((s) => s.renameDirector)
+  const removeDirector = useStore((s) => s.removeDirector)
+  const [menu, setMenu] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!menu) return
+    const h = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenu(false)
+    }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [menu])
 
   return (
     <section
@@ -49,6 +62,41 @@ export function DirectorColumn({ director, selectedIds, onSelect }: Props) {
           </p>
         </div>
         <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">{mine.length}</span>
+        <div ref={menuRef} className="relative">
+          <button
+            onClick={() => setMenu((m) => !m)}
+            aria-label={`Options for ${director.name}`}
+            className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+          >
+            <MoreHorizontal size={14} />
+          </button>
+          {menu && (
+            <div className="absolute right-0 top-full z-30 mt-1 w-44 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 text-sm shadow-lg">
+              <button
+                onClick={() => {
+                  setMenu(false)
+                  const name = window.prompt('Rename Account Director', director.name)
+                  if (name?.trim()) renameDirector(director.id, name)
+                }}
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-left hover:bg-slate-50"
+              >
+                <Pencil size={13} /> Rename
+              </button>
+              <button
+                onClick={() => {
+                  setMenu(false)
+                  const msg = mine.length
+                    ? `Remove ${director.name}? ${mine.length} account${mine.length === 1 ? '' : 's'} will move to Unassigned.`
+                    : `Remove ${director.name}?`
+                  if (window.confirm(msg)) removeDirector(director.id)
+                }}
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-red-600 hover:bg-red-50"
+              >
+                <Trash2 size={13} /> Remove
+              </button>
+            </div>
+          )}
+        </div>
       </header>
       <div className="scrollbar-thin flex flex-1 flex-col gap-1.5 p-2">
         {mine.length === 0 && (
@@ -67,5 +115,59 @@ export function DirectorColumn({ director, selectedIds, onSelect }: Props) {
         ))}
       </div>
     </section>
+  )
+}
+
+export function AddDirectorCard({ onAdd }: { onAdd: (name: string) => void }) {
+  const [open, setOpen] = useState(false)
+  const [name, setName] = useState('')
+  const submit = () => {
+    if (name.trim()) onAdd(name)
+    setName('')
+    setOpen(false)
+  }
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="flex min-h-[320px] flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 text-slate-400 transition hover:border-slate-300 hover:bg-white/60 hover:text-slate-600"
+      >
+        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100">
+          <UserPlus size={16} />
+        </span>
+        <span className="text-sm font-medium">Add Account Director</span>
+      </button>
+    )
+  }
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault()
+        submit()
+      }}
+      className="flex min-h-[320px] flex-col gap-2 rounded-xl border border-slate-200 bg-white p-3"
+    >
+      <label className="text-xs font-medium text-slate-600">New Account Director</label>
+      <input
+        autoFocus
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        onKeyDown={(e) => e.key === 'Escape' && setOpen(false)}
+        placeholder="Full name"
+        className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm focus:border-blue-400 focus:outline-none"
+      />
+      <div className="flex gap-2">
+        <button
+          type="submit"
+          disabled={!name.trim()}
+          className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-700 disabled:bg-slate-200 disabled:text-slate-400"
+        >
+          <Plus size={14} /> Add
+        </button>
+        <button type="button" onClick={() => setOpen(false)} className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50">
+          Cancel
+        </button>
+      </div>
+    </form>
   )
 }

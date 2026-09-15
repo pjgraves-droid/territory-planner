@@ -1,9 +1,10 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { parseAccountsCsv } from './csv'
-import { UNASSIGNED, type Account, type Version } from './types'
+import { DIRECTORS, DIRECTOR_PALETTE, UNASSIGNED, type Account, type Director, type Version } from './types'
 
 interface State {
+  directors: Director[]
   accounts: Account[]
   assignments: Record<string, string>
   notes: Record<string, string>
@@ -12,6 +13,9 @@ interface State {
   dirty: boolean
   seeded: boolean
 
+  addDirector: (name: string) => void
+  renameDirector: (id: string, name: string) => void
+  removeDirector: (id: string) => void
   seedFromCsv: (text: string, replaceAssignments: boolean) => void
   assign: (accountId: string, directorId: string) => void
   assignMany: (accountIds: string[], directorId: string) => void
@@ -31,6 +35,7 @@ const uid = () => Math.random().toString(36).slice(2, 10)
 export const useStore = create<State>()(
   persist(
     (set, get) => ({
+      directors: DIRECTORS,
       accounts: [],
       assignments: {},
       notes: {},
@@ -38,6 +43,34 @@ export const useStore = create<State>()(
       activeVersionId: null,
       dirty: false,
       seeded: false,
+
+      addDirector: (name) =>
+        set((s) => {
+          const trimmed = name.trim()
+          if (!trimmed) return {}
+          const parts = trimmed.split(/\s+/)
+          const short = parts[0]
+          const color = DIRECTOR_PALETTE[s.directors.length % DIRECTOR_PALETTE.length]
+          return { directors: [...s.directors, { id: `d-${uid()}`, name: trimmed, short, color }] }
+        }),
+
+      renameDirector: (id, name) =>
+        set((s) => ({
+          directors: s.directors.map((d) => (d.id === id ? { ...d, name: name.trim() || d.name, short: (name.trim() || d.name).split(/\s+/)[0] } : d)),
+        })),
+
+      removeDirector: (id) =>
+        set((s) => {
+          const assignments = { ...s.assignments }
+          let changed = false
+          for (const k of Object.keys(assignments)) {
+            if (assignments[k] === id) {
+              assignments[k] = UNASSIGNED
+              changed = true
+            }
+          }
+          return { directors: s.directors.filter((d) => d.id !== id), assignments, dirty: s.dirty || changed }
+        }),
 
       seedFromCsv: (text, replaceAssignments) => {
         const parsed = parseAccountsCsv(text)
