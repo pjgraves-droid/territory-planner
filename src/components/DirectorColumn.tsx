@@ -56,7 +56,7 @@ export function DirectorColumn({ director, selectedIds, onSelect }: Props) {
           {initials}
         </span>
         <div className="min-w-0 flex-1">
-          <h2 className="truncate text-sm font-semibold text-slate-800">{director.name}</h2>
+          <h2 className="text-sm font-semibold leading-snug text-slate-800">{director.name}</h2>
           <p className="text-[11px] text-slate-500">
             {au} AU · {nz} NZ{other ? ` · ${other} other` : ''}
           </p>

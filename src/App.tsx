@@ -68,7 +68,7 @@ export default function App() {
       <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setActiveId(null)}>
         <div className="flex min-h-0 flex-1">
           <AccountPool selectedIds={selected} onSelect={onSelect} onClearSelection={() => setSelected(new Set())} />
-          <main className="scrollbar-thin grid min-w-0 flex-1 auto-rows-min grid-cols-[repeat(auto-fit,minmax(200px,1fr))] content-start gap-3 overflow-y-auto p-4">
+          <main className="scrollbar-thin grid min-w-0 flex-1 auto-rows-min grid-cols-[repeat(auto-fit,minmax(230px,1fr))] content-start gap-3 overflow-y-auto p-4">
             {directors.map((d) => (
               <DirectorColumn key={d.id} director={d} selectedIds={selected} onSelect={onSelect} />
             ))}
