@@ -15,7 +15,10 @@ export function useAccountsFor(directorId: string): Account[] {
   const accounts = useStore((s) => s.accounts)
   const assignments = useStore((s) => s.assignments)
   return useMemo(
-    () => accounts.filter((a) => (assignments[a.id] ?? UNASSIGNED) === directorId).sort((a, b) => a.name.localeCompare(b.name)),
+    () =>
+      accounts
+        .filter((a) => (assignments[a.id] ?? UNASSIGNED) === directorId)
+        .sort((a, b) => (b.details?.icp ?? -1) - (a.details?.icp ?? -1) || a.name.localeCompare(b.name)),
     [accounts, assignments, directorId],
   )
 }
