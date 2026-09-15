@@ -15,6 +15,7 @@ export interface ExportInput {
 interface Row {
   Account: string
   Region: string
+  'ICP Score': number | ''
   'Account Director': string
   Justification: string
 }
@@ -33,6 +34,7 @@ export function buildRows({ accounts, assignments, notes, directors }: ExportInp
     .map((a) => ({
       Account: a.name,
       Region: a.region,
+      'ICP Score': a.details?.icp ?? '',
       'Account Director': nameOf(directors, assignments[a.id] ?? UNASSIGNED),
       Justification: notes[a.id] ?? '',
     }))
@@ -105,8 +107,8 @@ export function exportPdf(input: ExportInput) {
   doc.text('All accounts', 40, 50)
   autoTable(doc, {
     startY: 65,
-    head: [['Account', 'Region', 'Account Director', 'Justification']],
-    body: buildRows(input).map((r) => [r.Account, r.Region, r['Account Director'], r.Justification]),
+    head: [['Account', 'Region', 'ICP', 'Account Director', 'Justification']],
+    body: buildRows(input).map((r) => [r.Account, r.Region, String(r['ICP Score']), r['Account Director'], r.Justification]),
     styles: { fontSize: 9, cellPadding: 4 },
     headStyles: { fillColor: [30, 41, 59] },
   })
@@ -115,7 +117,7 @@ export function exportPdf(input: ExportInput) {
 
 export async function copyForGoogleSheets(input: ExportInput): Promise<void> {
   const rows = buildRows(input)
-  const header = Object.keys(rows[0] ?? { Account: '', Region: '', 'Account Director': '', Justification: '' })
+  const header = Object.keys(rows[0] ?? { Account: '', Region: '', 'ICP Score': '', 'Account Director': '', Justification: '' })
   const tsv = [header.join('\t'), ...rows.map((r) => header.map((h) => r[h as keyof Row]).join('\t'))].join('\n')
   await navigator.clipboard.writeText(tsv)
 }

@@ -1,9 +1,13 @@
 import { useDraggable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
-import { GripVertical, MessageSquare, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { GripVertical, Info, MessageSquare, Trash2 } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useStore } from '../store'
 import type { Account } from '../types'
+import { AccountDetailsPanel, icpStyle } from './AccountDetailsPanel'
+
+const HOVER_OPEN_MS = 450
+const HOVER_CLOSE_MS = 200
 
 interface Props {
   account: Account
@@ -29,11 +33,38 @@ export function AccountCard({ account, selected, onSelect, overlay, accent }: Pr
     disabled: overlay || editing,
   })
 
+  const [cardEl, setCardEl] = useState<HTMLDivElement | null>(null)
+  const timer = useRef<number | null>(null)
+  const [panel, setPanel] = useState<'closed' | 'hover' | 'pinned'>('closed')
+  const clearTimer = () => {
+    if (timer.current) window.clearTimeout(timer.current)
+    timer.current = null
+  }
+  const openSoon = () => {
+    if (overlay || panel === 'pinned') return
+    clearTimer()
+    timer.current = window.setTimeout(() => setPanel('hover'), HOVER_OPEN_MS)
+  }
+  const closeSoon = () => {
+    clearTimer()
+    if (panel === 'pinned') return
+    timer.current = window.setTimeout(() => setPanel((p) => (p === 'hover' ? 'closed' : p)), HOVER_CLOSE_MS)
+  }
+  const closePanel = useCallback(() => setPanel('closed'), [])
+  useEffect(() => clearTimer, [])
+
+  const icp = account.details?.icp
+
   return (
     <div
-      ref={setNodeRef}
+      ref={(el) => {
+        setNodeRef(el)
+        setCardEl(el)
+      }}
       style={{ transform: CSS.Translate.toString(transform), borderLeftColor: accent }}
       onClick={onSelect}
+      onMouseEnter={openSoon}
+      onMouseLeave={closeSoon}
       className={[
         'group relative flex items-start gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm shadow-sm transition',
         accent ? 'border-l-[3px]' : '',
@@ -45,6 +76,11 @@ export function AccountCard({ account, selected, onSelect, overlay, accent }: Pr
       <button
         {...listeners}
         {...attributes}
+        onPointerDown={(e) => {
+          clearTimer()
+          setPanel('closed')
+          listeners?.onPointerDown?.(e)
+        }}
         aria-label={`Drag ${account.name}`}
         className="mt-0.5 -ml-1 cursor-grab touch-none rounded p-0.5 text-slate-300 hover:text-slate-500 active:cursor-grabbing focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
       >
@@ -56,6 +92,14 @@ export function AccountCard({ account, selected, onSelect, overlay, accent }: Pr
           <span className={`ml-1.5 inline-block align-middle rounded px-1.5 py-px text-[10px] font-semibold leading-tight ring-1 ${regionStyle[account.region] ?? 'bg-slate-50 text-slate-600 ring-slate-200'}`}>
             {account.region}
           </span>
+          {icp != null && (
+            <span
+              title={`ICP score ${icp}/100`}
+              className={`ml-1 inline-block align-middle rounded px-1.5 py-px text-[10px] font-bold leading-tight ring-1 ${icpStyle(icp)}`}
+            >
+              {icp}
+            </span>
+          )}
         </p>
         {editing ? (
           <input
@@ -82,10 +126,23 @@ export function AccountCard({ account, selected, onSelect, overlay, accent }: Pr
           <button
             onClick={(e) => {
               e.stopPropagation()
+              clearTimer()
+              setPanel((p) => (p === 'pinned' ? 'closed' : 'pinned'))
+            }}
+            title="Account details"
+            className={`rounded p-0.5 transition hover:bg-slate-100 hover:text-slate-600 ${
+              panel === 'pinned' ? 'text-blue-600' : account.details ? 'text-slate-400' : 'text-slate-200 group-hover:text-slate-400'
+            }`}
+          >
+            <Info size={13} />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
               setEditing(true)
             }}
             title="Add justification"
-            className={`rounded p-1 transition hover:bg-slate-100 hover:text-slate-600 ${note ? 'text-slate-400' : 'text-slate-200 group-hover:text-slate-400'}`}
+            className={`rounded p-0.5 transition hover:bg-slate-100 hover:text-slate-600 ${note ? 'text-slate-400' : 'text-slate-200 group-hover:text-slate-400'}`}
           >
             <MessageSquare size={13} />
           </button>
@@ -95,11 +152,25 @@ export function AccountCard({ account, selected, onSelect, overlay, accent }: Pr
               if (window.confirm(`Remove ${account.name} from the board?`)) removeAccount(account.id)
             }}
             title="Remove account"
-            className="rounded p-1 text-slate-200 transition group-hover:text-slate-400 hover:bg-red-50 hover:text-red-600"
+            className="rounded p-0.5 text-slate-200 transition group-hover:text-slate-400 hover:bg-red-50 hover:text-red-600"
           >
             <Trash2 size={13} />
           </button>
         </div>
+      )}
+      {panel !== 'closed' && !isDragging && cardEl && (
+        <AccountDetailsPanel
+          account={account}
+          anchor={cardEl}
+          pinned={panel === 'pinned'}
+          onPin={() => {
+            clearTimer()
+            setPanel('pinned')
+          }}
+          onClose={closePanel}
+          onMouseEnter={clearTimer}
+          onMouseLeave={closeSoon}
+        />
       )}
     </div>
   )

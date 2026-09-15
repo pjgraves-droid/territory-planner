@@ -1,5 +1,6 @@
 import Papa from 'papaparse'
 import * as XLSX from 'xlsx'
+import { parseDetails, pickColumn as pick } from './csv'
 import type { NewAccount } from './store'
 import type { Director } from './types'
 
@@ -8,14 +9,7 @@ type RawRow = Record<string, unknown>
 const NAME_KEYS = ['account', 'account name', 'name', 'company', 'customer', 'organisation', 'organization']
 const REGION_KEYS = ['region', 'country', 'market', 'geo']
 const DIRECTOR_KEYS = ['ae lead', 'account director', 'director', 'owner', 'ad', 'lead', 'ae']
-const NOTE_KEYS = ['justification', 'note', 'notes', 'comment', 'comments']
-
-function pick(row: RawRow, keys: string[]): string {
-  for (const [k, v] of Object.entries(row)) {
-    if (keys.includes(k.trim().toLowerCase()) && v != null && String(v).trim()) return String(v).trim()
-  }
-  return ''
-}
+const NOTE_KEYS = ['justification', 'comment', 'comments']
 
 export function matchDirector(value: string, directors: Director[]): string | undefined {
   const v = value.trim().toLowerCase().replace(/\.$/, '')
@@ -43,7 +37,7 @@ function rowsToAccounts(rows: RawRow[], directors: Director[]): ImportResult {
     const dirRaw = pick(row, DIRECTOR_KEYS)
     const directorId = dirRaw ? matchDirector(dirRaw, directors) : undefined
     if (dirRaw && !directorId) unmatched.add(dirRaw)
-    out.push({ name, region, directorId, note: pick(row, NOTE_KEYS) || undefined })
+    out.push({ name, region, directorId, note: pick(row, NOTE_KEYS) || undefined, details: parseDetails(row) })
   }
   return { rows: out, unmatchedDirectors: Array.from(unmatched) }
 }

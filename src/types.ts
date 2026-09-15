@@ -31,10 +31,22 @@ export const CSV_LEAD_TO_DIRECTOR: Record<string, string> = {
   blake: 'blake',
 }
 
+export interface AccountDetails {
+  icp?: number
+  revenue?: string
+  employees?: string
+  hq?: string
+  engineers?: string
+  itSpend?: string
+  notes?: string
+  sources?: string[]
+}
+
 export interface Account {
   id: string
   name: string
   region: string
+  details?: AccountDetails
 }
 
 export interface Version {

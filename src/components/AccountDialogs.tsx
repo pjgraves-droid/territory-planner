@@ -113,7 +113,9 @@ export function ImportAccountsDialog({ onClose, onDone }: { onClose: () => void;
 
   const existing = new Set(accounts.map((a) => a.id))
   const newRows = result?.rows.filter((r) => !existing.has(slug(r.name))) ?? []
-  const dupCount = (result?.rows.length ?? 0) - newRows.length
+  const existingRows = result?.rows.filter((r) => existing.has(slug(r.name))) ?? []
+  const updateRows = existingRows.filter((r) => r.details)
+  const dupCount = existingRows.length - updateRows.length
   const assignedCount = newRows.filter((r) => r.directorId).length
 
   const load = async (f: File) => {
@@ -130,8 +132,10 @@ export function ImportAccountsDialog({ onClose, onDone }: { onClose: () => void;
   }
 
   const confirm = () => {
-    const { added } = addAccounts(newRows)
-    onDone(`Imported ${added} account${added === 1 ? '' : 's'}${dupCount ? ` · ${dupCount} already existed` : ''}`)
+    const { added, updated } = addAccounts([...newRows, ...updateRows])
+    onDone(
+      `Imported ${added} account${added === 1 ? '' : 's'}${updated ? ` · ${updated} updated` : ''}${dupCount ? ` · ${dupCount} already existed` : ''}`,
+    )
     onClose()
   }
 
@@ -152,7 +156,7 @@ export function ImportAccountsDialog({ onClose, onDone }: { onClose: () => void;
       >
         <FileUp size={20} className="text-slate-400" />
         <span className="text-sm font-medium text-slate-700">{file ? file.name : 'Drop a .csv, .xlsx or .xls file, or click to browse'}</span>
-        <span className="text-xs text-slate-400">Columns: Account (required), Region, Account Director / AE Lead, Justification</span>
+        <span className="text-xs text-slate-400">Columns: Account (required), Region, AE Lead, Justification, ICP Score, Revenue, Employees, HQ, Est. Software Engineers, Est. Annual IT Spend, Notes, Sources</span>
         <input
           type="file"
           accept=".csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
@@ -175,6 +179,7 @@ export function ImportAccountsDialog({ onClose, onDone }: { onClose: () => void;
           </p>
           <ul className="mt-1 space-y-0.5 text-xs text-slate-500">
             <li>{assignedCount} pre-assigned to a director, {newRows.length - assignedCount} to Unassigned</li>
+            {updateRows.length > 0 && <li>{updateRows.length} already on the board — details will be updated</li>}
             {dupCount > 0 && <li>{dupCount} already on the board — skipped</li>}
             {result.unmatchedDirectors.length > 0 && (
               <li className="text-amber-700">
@@ -192,8 +197,8 @@ export function ImportAccountsDialog({ onClose, onDone }: { onClose: () => void;
 
       <div className="mt-4 flex justify-end gap-2">
         <button type="button" onClick={onClose} className={secondary}>Cancel</button>
-        <button type="button" onClick={confirm} disabled={newRows.length === 0} className={primary}>
-          <FileUp size={14} /> Import {newRows.length > 0 ? newRows.length : ''}
+        <button type="button" onClick={confirm} disabled={newRows.length + updateRows.length === 0} className={primary}>
+          <FileUp size={14} /> {newRows.length === 0 && updateRows.length > 0 ? `Update ${updateRows.length}` : `Import ${newRows.length > 0 ? newRows.length : ''}`}
         </button>
       </div>
     </Modal>
